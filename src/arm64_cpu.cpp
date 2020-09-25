@@ -121,7 +121,7 @@ namespace avp64 {
                     if (it.second->read())
                         return;
                 }
-                vcml::log_debug("waiting for interrupt");
+                //vcml::log_debug("waiting for interrupt");
                 sc_core::wait(list);
                 break;
             }
