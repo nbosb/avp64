@@ -1,0 +1,15 @@
+diff --git a/qemu/target/arm/cpu.c b/qemu/target/arm/cpu.c
+index 3863afc3..3c33d68b 100644
+--- a/qemu/target/arm/cpu.c
++++ b/qemu/target/arm/cpu.c
+@@ -841,6 +841,10 @@ static void arm_cpu_post_init(struct uc_struct *uc, Object *obj)
+         cpu->has_el2 = true;
+     }
+ 
++    if (arm_feature(&cpu->env, ARM_FEATURE_PMU)) {
++        cpu->has_pmu = true;
++    }
++
+ 
+     if (arm_feature(&cpu->env, ARM_FEATURE_EL3)) {
+         /* Add the has_el3 state CPU property only if EL3 is allowed.  This will

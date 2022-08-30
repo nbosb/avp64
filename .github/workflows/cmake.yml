@@ -51,6 +51,7 @@ jobs:
       - name: Patch unicorn
         run: |
           git apply ${{github.workspace}}/patches/unicorn-fix-breakpoint.patch
+          git apply ${{github.workspace}}/patches/unicorn-fix-pmu.patch
           git apply ${{github.workspace}}/patches/unicorn-fix-wfi-hint.patch
         working-directory: ${{github.workspace}}/deps/ocx-qemu-arm/unicorn
 
