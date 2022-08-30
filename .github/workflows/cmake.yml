@@ -43,7 +43,9 @@ jobs:
         run: deps/vcml/utils/setup-systemc -p ${{github.workspace}} -v 2.3.3
 
       - name: Patch ocx-qemu-arm
-        run: git apply ${{github.workspace}}/patches/ocx-qemu-arm-disable-tests.patch
+        run: |
+          git apply ${{github.workspace}}/patches/ocx-qemu-arm-disable-tests.patch
+          git apply ${{github.workspace}}/patches/ocx-qemu-arm-fix_unicorn_debug_build.patch
         working-directory: ${{github.workspace}}/deps/ocx-qemu-arm
 
       - name: Patch unicorn

@@ -37,6 +37,7 @@ For that please follow the installation guideline of `vcml` which can be found [
 3. Patch submodules: Two patches can be applied to patch the `ocx-qemu-arm` submodule.
 
     - [ocx-qemu-arm-disable-tests.patch](./patches/ocx-qemu-arm-disable-tests.patch): This patch adds an option to the ocx-qemu-arm projects which allows disabling the tests of the submodule.
+    - [ocx-qemu-arm-fix_unicorn_debug_build.patch](./patches/ocx-qemu-arm-fix_unicorn_debug_build.patch): This patch enables a debug build of unicorn when the project is build with `CMAKE_BUILD_TYPE` equals `DEBUG`, `Debug` or `debug`.
     - [unicorn-fix-breakpoint.patch](./patches/unicorn-fix-breakpoint.patch): This patch fixes the breakpoint behavior of the VP.
     Without this patch, the VP executes the instruction on a breakpoint hit and stops after the execution.
     The patch stops the VP before the instruction is executed.
@@ -47,6 +48,7 @@ For that please follow the installation guideline of `vcml` which can be found [
 
     ```bash
     (cd <source-dir>/deps/ocx-qemu-arm && git apply <source-dir>/patches/ocx-qemu-arm-disable-tests.patch)
+    (cd <source-dir>/deps/ocx-qemu-arm && git apply <source-dir>/patches/ocx-qemu-arm-fix_unicorn_debug_build.patch)
     (cd <source-dir>/deps/ocx-qemu-arm/unicorn && git apply <source-dir>/patches/unicorn-fix-breakpoint.patch)
     (cd <source-dir>/deps/ocx-qemu-arm/unicorn && git apply <source-dir>/patches/unicorn-fix-wfi-hint.patch)
 
