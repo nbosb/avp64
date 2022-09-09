@@ -26,10 +26,7 @@ public:
     vcml::property<vcml::range> addr_gic_distif;
     vcml::property<vcml::range> addr_gic_vifctrl;
     vcml::property<vcml::range> addr_gic_vcpuif;
-    vcml::property<vcml::range> addr_uart0;
-    vcml::property<vcml::range> addr_uart1;
-    vcml::property<vcml::range> addr_uart2;
-    vcml::property<vcml::range> addr_uart3;
+    vcml::property<vcml::range> addr_uart;
     vcml::property<vcml::range> addr_ethoc;
     vcml::property<vcml::range> addr_sdhci;
     vcml::property<vcml::range> addr_simdev;
@@ -37,10 +34,7 @@ public:
     vcml::property<vcml::range> addr_spi;
     vcml::property<vcml::range> addr_gpio;
 
-    vcml::property<int> irq_uart0;
-    vcml::property<int> irq_uart1;
-    vcml::property<int> irq_uart2;
-    vcml::property<int> irq_uart3;
+    vcml::property<int> irq_uart;
     vcml::property<int> irq_ethoc;
     vcml::property<int> irq_sdhci;
     vcml::property<int> irq_gt_hyp;
@@ -67,14 +61,8 @@ private:
     vcml::generic::bus m_bus;
     vcml::generic::memory m_ram;
     vcml::arm::gic400 m_gic;
-    vcml::arm::pl011uart m_uart0;
-    vcml::arm::pl011uart m_uart1;
-    vcml::arm::pl011uart m_uart2;
-    vcml::arm::pl011uart m_uart3;
-    vcml::serial::terminal m_term0;
-    vcml::serial::terminal m_term1;
-    vcml::serial::terminal m_term2;
-    vcml::serial::terminal m_term3;
+    vcml::arm::pl011uart m_uart;
+    vcml::serial::terminal m_term;
     vcml::opencores::ethoc m_ethoc;
     vcml::ethernet::network m_net;
     vcml::ethernet::bridge m_bridge;

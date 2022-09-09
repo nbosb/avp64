@@ -29,8 +29,8 @@ if [ -z "$AVP64_SW" ]; then
     exit 0
 fi
 
-BUILD_DEBUG="$DIR/BUILD/DEBUG"
-BUILD_RELEASE="$DIR/BUILD/RELEASE"
+BUILD_DEBUG="$DIR/build/debug"
+BUILD_RELEASE="$DIR/build/release"
 
 rm -rf "$BUILD_DEBUG/sw"
 rm -rf "$BUILD_RELEASE/sw"
@@ -69,6 +69,20 @@ ln -s "$BUILD_DEBUG/sw/arm64/linux/sdcard.img" "$BUILD_DEBUG/sw/arm64x2/linux/sd
 ln -s "$BUILD_RELEASE/sw/arm64/linux/sdcard.img" "$BUILD_RELEASE/sw/arm64x2/linux/sdcard.img"
 ln -s "$BUILD_DEBUG/sw/arm64/linux/boot.bin" "$BUILD_DEBUG/sw/arm64x2/linux/boot.bin"
 ln -s "$BUILD_RELEASE/sw/arm64/linux/boot.bin" "$BUILD_RELEASE/sw/arm64x2/linux/boot.bin"
+
+AVP64_TUTORIAL_LINUX_DTB="$AVP64_LINUX_BUILD/buildroot/output/linux/images/avp64_linux_tutorial.dtb"
+mkdir -p "$BUILD_DEBUG/sw/arm64_tutorial/linux"
+mkdir -p "$BUILD_RELEASE/sw/arm64_tutorial/linux"
+ln -s "$BUILD_DEBUG/sw/arm64/linux/Image-4.19.4" "$BUILD_DEBUG/sw/arm64_tutorial/linux/Image-4.19.4"
+ln -s "$BUILD_RELEASE/sw/arm64/linux/Image-4.19.4" "$BUILD_RELEASE/sw/arm64_tutorial/linux/Image-4.19.4"
+ln -s "$BUILD_DEBUG/sw/arm64/linux/vmlinux-4.19.4" "$BUILD_DEBUG/sw/arm64_tutorial/linux/vmlinux-4.19.4"
+ln -s "$BUILD_RELEASE/sw/arm64/linux/vmlinux-4.19.4" "$BUILD_RELEASE/sw/arm64_tutorial/linux/vmlinux-4.19.4"
+cp -rv "$AVP64_TUTORIAL_LINUX_DTB" "$BUILD_DEBUG/sw/arm64_tutorial/linux/tutorial_linux.dtb"
+cp -rv "$AVP64_TUTORIAL_LINUX_DTB" "$BUILD_RELEASE/sw/arm64_tutorial/linux/tutorial_linux.dtb"
+ln -s "$BUILD_DEBUG/sw/arm64/linux/sdcard.img" "$BUILD_DEBUG/sw/arm64_tutorial/linux/sdcard.img"
+ln -s "$BUILD_RELEASE/sw/arm64/linux/sdcard.img" "$BUILD_RELEASE/sw/arm64_tutorial/linux/sdcard.img"
+ln -s "$BUILD_DEBUG/sw/arm64/linux/boot.bin" "$BUILD_DEBUG/sw/arm64_tutorial/linux/boot.bin"
+ln -s "$BUILD_RELEASE/sw/arm64/linux/boot.bin" "$BUILD_RELEASE/sw/arm64_tutorial/linux/boot.bin"
 
 AVP64_XEN_BUILD="$AVP64_SW/xen/BUILD"
 AVP64_XEN_KERNEL_IMAGE="$AVP64_XEN_BUILD/buildroot/output/dom0/images/Image.gz"

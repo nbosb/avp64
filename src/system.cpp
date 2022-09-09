@@ -69,10 +69,7 @@ void system::construct_system_arm64() {
     m_clock.clk.bind(m_bus.clk);
     m_clock.clk.bind(m_ram.clk);
     m_clock.clk.bind(m_gic.clk);
-    m_clock.clk.bind(m_uart0.clk);
-    m_clock.clk.bind(m_uart1.clk);
-    m_clock.clk.bind(m_uart2.clk);
-    m_clock.clk.bind(m_uart3.clk);
+    m_clock.clk.bind(m_uart.clk);
     m_clock.clk.bind(m_ethoc.clk);
     m_clock.clk.bind(m_sdcard.clk);
     m_clock.clk.bind(m_sdhci.clk);
@@ -89,10 +86,7 @@ void system::construct_system_arm64() {
     m_reset.rst.bind(m_bus.rst);
     m_reset.rst.bind(m_ram.rst);
     m_reset.rst.bind(m_gic.rst);
-    m_reset.rst.bind(m_uart0.rst);
-    m_reset.rst.bind(m_uart1.rst);
-    m_reset.rst.bind(m_uart2.rst);
-    m_reset.rst.bind(m_uart3.rst);
+    m_reset.rst.bind(m_uart.rst);
     m_reset.rst.bind(m_ethoc.rst);
     m_reset.rst.bind(m_sdcard.rst);
     m_reset.rst.bind(m_sdhci.rst);
@@ -108,10 +102,7 @@ void system::construct_system_arm64() {
         m_bus.bind(cpu->data);
     }
     m_bus.bind(m_ram.in, addr_ram);
-    m_bus.bind(m_uart0.in, addr_uart0);
-    m_bus.bind(m_uart1.in, addr_uart1);
-    m_bus.bind(m_uart2.in, addr_uart2);
-    m_bus.bind(m_uart3.in, addr_uart3);
+    m_bus.bind(m_uart.in, addr_uart);
     m_bus.bind(m_ethoc.in, addr_ethoc.get());
     m_bus.bind(m_ethoc.out);
     m_bus.bind(m_sdhci.in, addr_sdhci.get());
@@ -130,10 +121,7 @@ void system::construct_system_arm64() {
     m_net.connect(m_bridge);
 
     // Connect terminals to uarts
-    m_term0.connect(m_uart0);
-    m_term1.connect(m_uart1);
-    m_term2.connect(m_uart2);
-    m_term3.connect(m_uart3);
+    m_term.connect(m_uart);
 
     // Bind SDHCI and SDCARD
     m_sdhci.sd_out.bind(m_sdcard.sd_in);
@@ -144,10 +132,7 @@ void system::construct_system_arm64() {
     m_max31855.bind(m_gpio.gpio_out[0], false); // CS_ACTIVE_LOW
 
     // IRQs
-    m_gic.spi_in[irq_uart0].bind(m_uart0.irq);
-    m_gic.spi_in[irq_uart1].bind(m_uart1.irq);
-    m_gic.spi_in[irq_uart2].bind(m_uart2.irq);
-    m_gic.spi_in[irq_uart3].bind(m_uart3.irq);
+    m_gic.spi_in[irq_uart].bind(m_uart.irq);
     m_gic.spi_in[irq_ethoc].bind(m_ethoc.irq);
     m_gic.spi_in[irq_sdhci].bind(m_sdhci.irq);
     m_gic.spi_in[irq_spi].bind(m_spi.irq);
@@ -165,10 +150,7 @@ system::system(const sc_core::sc_module_name& nm):
                                                      AVP64_GIC_VIFCTRL_HIGH)),
     addr_gic_vcpuif("addr_gic_vcpuif",
                     vcml::range(AVP64_GIC_VCPUIF_ADDR, AVP64_GIC_VCPUIF_HIGH)),
-    addr_uart0("addr_uart0", vcml::range(AVP64_UART0_ADDR, AVP64_UART0_HIGH)),
-    addr_uart1("addr_uart1", vcml::range(AVP64_UART1_ADDR, AVP64_UART1_HIGH)),
-    addr_uart2("addr_uart2", vcml::range(AVP64_UART2_ADDR, AVP64_UART2_HIGH)),
-    addr_uart3("addr_uart3", vcml::range(AVP64_UART3_ADDR, AVP64_UART3_HIGH)),
+    addr_uart("addr_uart", vcml::range(AVP64_UART0_ADDR, AVP64_UART0_HIGH)),
     addr_ethoc("addr_ethoc", vcml::range(AVP64_ETHOC_ADDR, AVP64_ETHOC_HIGH)),
     addr_sdhci("addr_sdhci", vcml::range(AVP64_SDHCI_ADDR, AVP64_SDHCI_HIGH)),
     addr_simdev("addr_simdev",
@@ -176,10 +158,7 @@ system::system(const sc_core::sc_module_name& nm):
     addr_hwrng("addr_hwrng", vcml::range(AVP64_HWRNG_ADDR, AVP64_HWRNG_HIGH)),
     addr_spi("addr_spi", vcml::range(AVP64_SPI_ADDR, AVP64_SPI_HIGH)),
     addr_gpio("addr_gpio", vcml::range(AVP64_GPIO_ADDR, AVP64_GPIO_HIGH)),
-    irq_uart0("irq_uart0", AVP64_IRQ_UART0),
-    irq_uart1("irq_uart1", AVP64_IRQ_UART1),
-    irq_uart2("irq_uart2", AVP64_IRQ_UART2),
-    irq_uart3("irq_uart3", AVP64_IRQ_UART3),
+    irq_uart("irq_uart", AVP64_IRQ_UART0),
     irq_ethoc("irq_ethoc", AVP64_IRQ_ETHOC),
     irq_sdhci("irq_sdhci", AVP64_IRQ_SDHCI),
     irq_gt_hyp("irq_gt_hyp", AVP64_IRQ_GT_HYP),
@@ -193,14 +172,8 @@ system::system(const sc_core::sc_module_name& nm):
     m_bus("bus"),
     m_ram("ram", addr_ram.get().length()),
     m_gic("gic"),
-    m_uart0("uart0"),
-    m_uart1("uart1"),
-    m_uart2("uart2"),
-    m_uart3("uart3"),
-    m_term0("term0"),
-    m_term1("term1"),
-    m_term2("term2"),
-    m_term3("term3"),
+    m_uart("uart"),
+    m_term("term"),
     m_ethoc("ethoc"),
     m_net("net"),
     m_bridge("bridge"),
