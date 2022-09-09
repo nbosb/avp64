@@ -12,6 +12,7 @@
 
 #include "vcml.h"
 #include "avp64/arm64_cpu.h"
+#include "tutorial/pl011.h"
 
 namespace avp64 {
 
@@ -61,7 +62,6 @@ private:
     vcml::generic::bus m_bus;
     vcml::generic::memory m_ram;
     vcml::arm::gic400 m_gic;
-    vcml::arm::pl011uart m_uart;
     vcml::serial::terminal m_term;
     vcml::opencores::ethoc m_ethoc;
     vcml::ethernet::network m_net;
@@ -74,6 +74,8 @@ private:
     vcml::opencores::ocspi m_spi;
     vcml::generic::gpio m_gpio;
     vcml::spi::max31855 m_max31855;
+
+    /// TODO: define a tutorial::pl011 UART model
 
     void construct_system_arm64();
 };

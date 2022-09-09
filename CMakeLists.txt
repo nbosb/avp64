@@ -42,6 +42,7 @@ set(inc "${CMAKE_CURRENT_SOURCE_DIR}/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/deps/ocx-qemu-arm/ocx/include")
 
 set(sources
+    ${src}/tutorial/pl011.cpp
     ${src}/arm64_cpu.cpp
     ${src}/system.cpp
     ${src}/main.cpp)
