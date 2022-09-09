@@ -6,3 +6,5 @@ gdbscript*
 .idea
 /build/
 .vscode
+.clangd/
+compile_commands.json
