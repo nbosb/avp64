@@ -3,6 +3,9 @@
 #define TUTORIAL_PL011_H
 
 #include "vcml.h"
+#include "vcml/protocols/gpio.h"
+#include "vcml/protocols/serial.h"
+#include "vcml/protocols/tlm_sockets.h"
 
 namespace tutorial {
 
@@ -93,8 +96,7 @@ public:
         CR_RXE = 1 << 9     // Receive Enable
     };
 
-    /// TODO: define the 16-bit Data Register `dr`
-
+    vcml::reg<vcml::u16> dr;   // Data Register
     vcml::reg<vcml::u8> rsr;   // Receive Status Register
     vcml::reg<vcml::u16> fr;   // Flag Register
     vcml::reg<vcml::u8> ilpr;  // IrDA Low-Power Counter Register
@@ -112,12 +114,11 @@ public:
     vcml::reg<vcml::u32, 4> pid; // Peripheral ID Register
     vcml::reg<vcml::u32, 4> cid; // Cell ID Register
 
-    /// TODO: define a tlm target socket to expose the registers
+    vcml::tlm_target_socket in;
+    vcml::gpio_initiator_socket irq;
 
-    /// TODO: define a gpio initiator socket to send interrupts (call it `irq`)
-
-    /// TODO: define serial initiator and target sockets to print output and
-    /// receive input
+    vcml::serial_initiator_socket serial_tx;
+    vcml::serial_target_socket serial_rx;
 
     explicit pl011(const sc_core::sc_module_name& name);
     pl011() = delete;

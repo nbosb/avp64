@@ -1,4 +1,5 @@
 #include "tutorial/pl011.h"
+#include "vcml/protocols/serial.h"
 
 namespace tutorial {
 
@@ -20,8 +21,10 @@ void pl011::serial_receive(vcml::u8 data) {
 vcml::u16 pl011::read_dr() {
     vcml::u16 val = 0;
 
-    /// TODO: check if the fifo contains any new values. If yes, pop a value
-    /// and store it in `val`
+    if (!m_fifo.empty()) {
+        val = m_fifo.front();
+        m_fifo.pop();
+    }
 
     dr = val;
 
@@ -44,14 +47,12 @@ void pl011::write_dr(vcml::u16 val) {
     if (!is_tx_enabled())
         return;
 
-    /// TODO: ignore the upper 8 bits of `val` and store the character in the
-    /// Data Register `dr`
+    dr = val & 0x00ff;
 
     // set the transmit interrupt bit
     ris |= RIS_TX;
 
-    /// TODO: send the character to the terminal using the serial initiator
-    /// socket
+    serial_tx.send(dr);
 
     // update flags and interrupts
     update();
@@ -140,7 +141,7 @@ pl011::pl011(const sc_core::sc_module_name& nm):
     serial_host(),
     m_fifo_size(),
     m_fifo(),
-    /// TODO: initialize the Data Register `dr`
+    dr("dr", 0x000, 0x0),
     rsr("rsr", 0x004, 0x0),
     fr("fr", 0x018, FR_TXFE | FR_RXFE),
     ilpr("ilpr", 0x020, 0x0),
@@ -155,21 +156,16 @@ pl011::pl011(const sc_core::sc_module_name& nm):
     icr("icr", 0x044, 0x0),
     dmac("dmac", 0x048, 0x0),
     pid("pid", 0xFE0, 0x00),
-    cid("cid", 0xFF0, 0x00)
-/// TODO: initialize the tlm target socket
-/// TODO: initialize the gpio irq socket
-/// TODO: initialize the serial target and initiator sockets
-{
-    /// TODO: sync local time and simulation time on every read/write of the
-    /// Data Register `dr`
-
-    /// TODO: allows to read and write the Data Register `dr`
-
-    /// TODO: on every read of the Data Register `dr`, call the function
-    /// `pl011::read_dr`
-
-    /// TODO: on every write to the Data Register `dr`, call the function
-    /// `pl011::write_dr`
+    cid("cid", 0xFF0, 0x00),
+    in("in"),
+    irq("irq"),
+    serial_tx("serial_tx"),
+    serial_rx("serial_rx") {
+    
+    dr.sync_always();
+    dr.allow_read_write();
+    dr.on_read(&pl011::read_dr);
+    dr.on_write(&pl011::write_dr);
 
     rsr.sync_always();
     rsr.allow_read_write();

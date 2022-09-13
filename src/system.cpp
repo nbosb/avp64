@@ -77,8 +77,7 @@ void system::construct_system_arm64() {
     m_clock.clk.bind(m_spibus.clk);
     m_clock.clk.bind(m_spi.clk);
     m_clock.clk.bind(m_gpio.clk);
-
-    /// TODO: connect the UART to the clock signal
+    m_clock.clk.bind(m_uart.clk);
 
     // Reset
     for (const auto& cpu : m_cpus) {
@@ -95,8 +94,7 @@ void system::construct_system_arm64() {
     m_reset.rst.bind(m_spibus.rst);
     m_reset.rst.bind(m_spi.rst);
     m_reset.rst.bind(m_gpio.rst);
-
-    /// TODO: connect the UART to the reset signal
+    m_reset.rst.bind(m_uart.rst);
 
     // Bus bindings
     for (const auto& cpu : m_cpus) {
@@ -117,9 +115,10 @@ void system::construct_system_arm64() {
     m_bus.bind(m_spi.in, addr_spi);
     m_bus.bind(m_gpio.in, addr_gpio);
 
-    /// TODO: connect the UART to the bus
+    m_bus.bind(m_uart.in, addr_uart);
 
-    /// TODO: connect the UART to the terminal `m_term`
+    m_term.serial_tx.bind(m_uart.serial_rx);
+    m_uart.serial_tx.bind(m_term.serial_rx);
 
     // Connect network to eth
     m_net.connect(m_ethoc);
@@ -137,8 +136,7 @@ void system::construct_system_arm64() {
     m_gic.spi_in[irq_ethoc].bind(m_ethoc.irq);
     m_gic.spi_in[irq_sdhci].bind(m_sdhci.irq);
     m_gic.spi_in[irq_spi].bind(m_spi.irq);
-
-    /// TODO: connect the UART interrupt to the GIC
+    m_gic.spi_in[irq_uart].bind(m_uart.irq);
 }
 
 system::system(const sc_core::sc_module_name& nm):
@@ -186,9 +184,8 @@ system::system(const sc_core::sc_module_name& nm):
     m_spibus("spibus"),
     m_spi("spi"),
     m_gpio("gpio"),
-    m_max31855("max31855")
-/// TODO: initialize uart
-{
+    m_max31855("max31855"),
+    m_uart("uart") {
     construct_system_arm64();
 }
 

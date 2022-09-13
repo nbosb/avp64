@@ -75,7 +75,7 @@ private:
     vcml::generic::gpio m_gpio;
     vcml::spi::max31855 m_max31855;
 
-    /// TODO: define a tutorial::pl011 UART model
+    tutorial::pl011 m_uart;
 
     void construct_system_arm64();
 };
