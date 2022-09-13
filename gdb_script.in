@@ -1,0 +1,6 @@
+set architecture aarch64
+file $VM_LINUX
+set substitute-path /app/build/buildroot/output/linux/build/linux-4.19.4 $LINUX_BUILD_DIR
+target remote :52100
+layout split
+focus cmd

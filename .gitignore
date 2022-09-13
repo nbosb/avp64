@@ -8,3 +8,4 @@ gdbscript*
 .vscode
 .clangd/
 compile_commands.json
+gdb_script
