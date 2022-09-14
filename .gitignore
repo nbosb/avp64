@@ -7,5 +7,6 @@ gdbscript*
 /build/
 .vscode
 .clangd/
+.cache/
 compile_commands.json
 gdb_script
