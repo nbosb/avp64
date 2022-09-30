@@ -77,7 +77,7 @@ void system::construct_system_arm64() {
     m_clock.clk.bind(m_spibus.clk);
     m_clock.clk.bind(m_spi.clk);
     m_clock.clk.bind(m_gpio.clk);
-    m_clock.clk.bind(m_uart.clk);
+    m_clock.clk.bind(m_pl011.clk);
 
     // Reset
     for (const auto& cpu : m_cpus) {
@@ -94,7 +94,7 @@ void system::construct_system_arm64() {
     m_reset.rst.bind(m_spibus.rst);
     m_reset.rst.bind(m_spi.rst);
     m_reset.rst.bind(m_gpio.rst);
-    m_reset.rst.bind(m_uart.rst);
+    m_reset.rst.bind(m_pl011.rst);
 
     // Bus bindings
     for (const auto& cpu : m_cpus) {
@@ -115,10 +115,10 @@ void system::construct_system_arm64() {
     m_bus.bind(m_spi.in, addr_spi);
     m_bus.bind(m_gpio.in, addr_gpio);
 
-    m_bus.bind(m_uart.in, addr_uart);
+    m_bus.bind(m_pl011.in, addr_pl011);
 
-    m_term.serial_tx.bind(m_uart.serial_rx);
-    m_uart.serial_tx.bind(m_term.serial_rx);
+    m_term.serial_tx.bind(m_pl011.serial_rx);
+    m_pl011.serial_tx.bind(m_term.serial_rx);
 
     // Connect network to eth
     m_net.connect(m_ethoc);
@@ -136,7 +136,7 @@ void system::construct_system_arm64() {
     m_gic.spi_in[irq_ethoc].bind(m_ethoc.irq);
     m_gic.spi_in[irq_sdhci].bind(m_sdhci.irq);
     m_gic.spi_in[irq_spi].bind(m_spi.irq);
-    m_gic.spi_in[irq_uart].bind(m_uart.irq);
+    m_gic.spi_in[irq_pl011].bind(m_pl011.irq);
 }
 
 system::system(const sc_core::sc_module_name& nm):
@@ -151,7 +151,7 @@ system::system(const sc_core::sc_module_name& nm):
                                                      AVP64_GIC_VIFCTRL_HIGH)),
     addr_gic_vcpuif("addr_gic_vcpuif",
                     vcml::range(AVP64_GIC_VCPUIF_ADDR, AVP64_GIC_VCPUIF_HIGH)),
-    addr_uart("addr_uart", vcml::range(AVP64_UART0_ADDR, AVP64_UART0_HIGH)),
+    addr_pl011("addr_pl011", vcml::range(AVP64_PL011_ADDR, AVP64_PL011_HIGH)),
     addr_ethoc("addr_ethoc", vcml::range(AVP64_ETHOC_ADDR, AVP64_ETHOC_HIGH)),
     addr_sdhci("addr_sdhci", vcml::range(AVP64_SDHCI_ADDR, AVP64_SDHCI_HIGH)),
     addr_simdev("addr_simdev",
@@ -159,7 +159,7 @@ system::system(const sc_core::sc_module_name& nm):
     addr_hwrng("addr_hwrng", vcml::range(AVP64_HWRNG_ADDR, AVP64_HWRNG_HIGH)),
     addr_spi("addr_spi", vcml::range(AVP64_SPI_ADDR, AVP64_SPI_HIGH)),
     addr_gpio("addr_gpio", vcml::range(AVP64_GPIO_ADDR, AVP64_GPIO_HIGH)),
-    irq_uart("irq_uart", AVP64_IRQ_UART0),
+    irq_pl011("irq_pl011", AVP64_IRQ_PL011),
     irq_ethoc("irq_ethoc", AVP64_IRQ_ETHOC),
     irq_sdhci("irq_sdhci", AVP64_IRQ_SDHCI),
     irq_gt_hyp("irq_gt_hyp", AVP64_IRQ_GT_HYP),
@@ -185,7 +185,7 @@ system::system(const sc_core::sc_module_name& nm):
     m_spi("spi"),
     m_gpio("gpio"),
     m_max31855("max31855"),
-    m_uart("uart") {
+    m_pl011("pl011") {
     construct_system_arm64();
 }
 
