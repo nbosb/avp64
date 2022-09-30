@@ -27,7 +27,7 @@ public:
     vcml::property<vcml::range> addr_gic_distif;
     vcml::property<vcml::range> addr_gic_vifctrl;
     vcml::property<vcml::range> addr_gic_vcpuif;
-    vcml::property<vcml::range> addr_uart;
+    vcml::property<vcml::range> addr_pl011;
     vcml::property<vcml::range> addr_ethoc;
     vcml::property<vcml::range> addr_sdhci;
     vcml::property<vcml::range> addr_simdev;
@@ -35,7 +35,7 @@ public:
     vcml::property<vcml::range> addr_spi;
     vcml::property<vcml::range> addr_gpio;
 
-    vcml::property<int> irq_uart;
+    vcml::property<int> irq_pl011;
     vcml::property<int> irq_ethoc;
     vcml::property<int> irq_sdhci;
     vcml::property<int> irq_gt_hyp;
