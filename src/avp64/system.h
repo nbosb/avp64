@@ -19,6 +19,9 @@ enum : mwr::u64 {
     RAM_LO = 0x00000000,
     RAM_HI = RAM_LO + 0x10000000 - 1,
 
+    EXIT_LO = 0x10004000,
+    EXIT_HI = EXIT_LO + 0x1000 - 1,
+
     HWRNG_LO = 0x10007000,
     HWRNG_HI = HWRNG_LO + 0x1000 - 1,
 
@@ -70,12 +73,41 @@ enum : mwr::u64 {
     CAN_0 = 14,
     CAN_1 = 15,
 };
+class exit_peripheral : public vcml::peripheral
+{
+public:
+    vcml::reg<vcml::u64> start;
+    vcml::reg<vcml::u64> done;
+
+    vcml::tlm_target_socket in;
+
+    exit_peripheral(const vcml::sc_module_name& nm):
+        vcml::peripheral(nm),
+        start("start", 0x00, 0x00),
+        done("done", 0x08, 0x00),
+        in("in") {
+        start.allow_read_write();
+        start.on_write([&](vcml::u8 val) -> void {
+            log_info("core %d registered", val);
+            start += 1;
+        });
+
+        done.allow_read_write();
+        done.on_write([&](vcml::u8 val) -> void {
+            log_info("core %d done", val);
+            done += 1;
+            if (done == start)
+                sc_core::sc_stop();
+        });
+    }
+};
 
 class system : public vcml::system
 {
 public:
     // properties
     vcml::property<vcml::range> addr_ram;
+    vcml::property<vcml::range> addr_exit;
     vcml::property<vcml::range> addr_uart0;
     vcml::property<vcml::range> addr_uart1;
     vcml::property<vcml::range> addr_uart2;
@@ -118,6 +150,7 @@ private:
 
     vcml::generic::bus m_bus;
     vcml::generic::memory m_ram;
+    exit_peripheral m_exit;
     vcml::serial::pl011 m_uart0;
     vcml::serial::pl011 m_uart1;
     vcml::serial::pl011 m_uart2;

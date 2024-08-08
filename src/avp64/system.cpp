@@ -15,6 +15,7 @@ namespace avp64 {
 void system::construct_system_arm64() {
     clk_bind(m_clock_cpu, "clk", m_bus, "clk");
     clk_bind(m_clock_cpu, "clk", m_ram, "clk");
+    clk_bind(m_clock_cpu, "clk", m_exit, "clk");
     clk_bind(m_clock_cpu, "clk", m_uart0, "clk");
     clk_bind(m_clock_cpu, "clk", m_uart1, "clk");
     clk_bind(m_clock_cpu, "clk", m_uart2, "clk");
@@ -33,6 +34,7 @@ void system::construct_system_arm64() {
 
     gpio_bind(m_reset, "rst", m_bus, "rst");
     gpio_bind(m_reset, "rst", m_ram, "rst");
+    gpio_bind(m_reset, "rst", m_exit, "rst");
     gpio_bind(m_reset, "rst", m_uart0, "rst");
     gpio_bind(m_reset, "rst", m_uart1, "rst");
     gpio_bind(m_reset, "rst", m_uart2, "rst");
@@ -51,6 +53,7 @@ void system::construct_system_arm64() {
 
     tlm_bind(m_bus, m_cpu, "bus");
     tlm_bind(m_bus, m_ram, "in", addr_ram);
+    tlm_bind(m_bus, m_exit, "in", addr_exit);
     tlm_bind(m_bus, m_uart0, "in", addr_uart0);
     tlm_bind(m_bus, m_uart1, "in", addr_uart1);
     tlm_bind(m_bus, m_uart2, "in", addr_uart2);
@@ -110,6 +113,7 @@ void system::construct_system_arm64() {
 system::system(const sc_core::sc_module_name& nm):
     vcml::system(nm),
     addr_ram("addr_ram", { RAM_LO, RAM_HI }),
+    addr_exit("addr_exit", { EXIT_LO, EXIT_HI }),
     addr_uart0("addr_uart0", { UART0_LO, UART0_HI }),
     addr_uart1("addr_uart1", { UART1_LO, UART1_HI }),
     addr_uart2("addr_uart2", { UART2_LO, UART2_HI }),
@@ -137,6 +141,7 @@ system::system(const sc_core::sc_module_name& nm):
     m_throttle("throttle"),
     m_bus("bus"),
     m_ram("ram", addr_ram.get().length()),
+    m_exit("exit"),
     m_uart0("uart0"),
     m_uart1("uart1"),
     m_uart2("uart2"),
