@@ -45,32 +45,38 @@ void memory_protector::segfault_handler_int(int sig, siginfo_t* si,
 
 void memory_protector::register_page(core* core, vcml::u64 page_addr,
                                      void* host_addr) {
-    auto it = m_protected_pages.find(reinterpret_cast<vcml::u64>(host_addr));
-    if (it != m_protected_pages.end()) {
-        if (it->second.locked) {
-            if (it->second.page_addr != page_addr) {
-                vcml::log_error("page_addr do not match! %llu vs. %llu",
-                                it->second.page_addr, page_addr);
+    {
+        std::lock_guard lk(m_mtx);
+        auto it = m_protected_pages.find(
+            reinterpret_cast<vcml::u64>(host_addr));
+        if (it != m_protected_pages.end()) {
+            if (it->second.locked) {
+                if (it->second.page_addr != page_addr) {
+                    vcml::log_error("page_addr do not match! %llu vs. %llu",
+                                    it->second.page_addr, page_addr);
+                }
+                return;
+            } else {
+                it->second.locked = true;
             }
-            return;
         } else {
-            it->second.locked = true;
+            struct page_data&
+                pd = m_protected_pages[reinterpret_cast<vcml::u64>(host_addr)];
+            pd.c = core;
+            pd.page_addr = page_addr;
+            pd.page_size = core->get_page_size();
+            pd.locked = true;
         }
-    } else {
-        struct page_data&
-            pd = m_protected_pages[reinterpret_cast<vcml::u64>(host_addr)];
-        pd.c = core;
-        pd.page_addr = page_addr;
-        pd.page_size = core->get_page_size();
-        pd.locked = true;
+        VCML_ERROR_ON(
+            ::mprotect(host_addr, core->get_page_size(), PROT_READ) != 0,
+            "mprotect: %s", std::strerror(errno));
     }
-    VCML_ERROR_ON(::mprotect(host_addr, core->get_page_size(), PROT_READ) != 0,
-                  "mprotect: %s", std::strerror(errno));
 }
 
 bool memory_protector::notify_page(void* access_addr) {
     vcml::u64 host_page_addr = reinterpret_cast<vcml::u64>(access_addr) &
                                (~0xfffull);
+    std::lock_guard lk(m_mtx);
     auto it = m_protected_pages.find(host_page_addr);
     if (it == m_protected_pages.end()) { // not a locked page
         return false;
@@ -82,6 +88,8 @@ bool memory_protector::notify_page(void* access_addr) {
 }
 
 ocx::u8* core::get_page_ptr_r(ocx::u64 page_paddr) {
+    update_requests();
+
     tlm::tlm_dmi dmi;
     vcml::u64 page_size = get_page_size();
     if (insn.dmi_cache().lookup(page_paddr, page_size, tlm::TLM_READ_COMMAND,
@@ -102,6 +110,8 @@ ocx::u8* core::get_page_ptr_r(ocx::u64 page_paddr) {
 }
 
 ocx::u8* core::get_page_ptr_w(ocx::u64 page_paddr) {
+    update_requests();
+
     tlm::tlm_dmi dmi;
     vcml::u64 page_size = get_page_size();
     if (insn.dmi_cache().lookup(page_paddr, page_size, tlm::TLM_WRITE_COMMAND,
@@ -126,6 +136,16 @@ void core::protect_page(ocx::u8* page_ptr, ocx::u64 page_addr) {
 }
 
 ocx::response core::transport(const ocx::transaction& tx) {
+    iguard_leave g(m_guard);
+
+    update_requests();
+
+    if (vcml::sc_is_async()) {
+        sc_core::sc_time& lt = local_time();
+        vcml::sc_progress(lt);
+        lt = sc_core::SC_ZERO_TIME;
+    }
+
     vcml::tlm_sbi info = vcml::SBI_NONE;
     if (tx.is_debug)
         info |= vcml::SBI_DEBUG;
@@ -134,8 +154,17 @@ ocx::response core::transport(const ocx::transaction& tx) {
     info.cpuid = core_id();
     tlm::tlm_response_status resp = tlm::TLM_GENERIC_ERROR_RESPONSE;
 
-    resp = tx.is_read ? data.read(tx.addr, tx.data, tx.size, info)
-                      : data.write(tx.addr, tx.data, tx.size, info);
+    if (data.allow_dmi &&
+        vcml::success(data.access_dmi(
+            tx.is_read ? tlm::TLM_READ_COMMAND : tlm::TLM_WRITE_COMMAND,
+            tx.addr, tx.data, tx.size, info))) {
+        resp = tlm::TLM_OK_RESPONSE;
+    } else {
+        vcml::sc_sync([&]() {
+            resp = tx.is_read ? data.read(tx.addr, tx.data, tx.size, info)
+                              : data.write(tx.addr, tx.data, tx.size, info);
+        });
+    }
 
     switch (resp) {
     case tlm::TLM_OK_RESPONSE:
@@ -179,7 +208,8 @@ void core::log_timing_info() const {
 
 void core::signal(ocx::u64 sigid, bool set) {
     if (timer_irq_out[sigid] != set) {
-        timer_irq_out[sigid] = set;
+        iguard_leave g(m_guard);
+        vcml::sc_sync([&]() { timer_irq_out[sigid] = set; });
     }
 }
 
@@ -206,36 +236,52 @@ const char* core::get_param(const char* name) {
 }
 
 void core::notify(ocx::u64 eventid, ocx::u64 time_ps) {
-    sc_core::sc_time notify_time = vcml::time_from_value(time_ps);
-    sc_core::sc_time delta = notify_time - sc_core::sc_time_stamp();
-    timer_events[eventid]->notify(delta);
+    iguard_leave g(m_guard);
+
+    vcml::sc_sync([&]() {
+        sc_core::sc_time notify_time = vcml::time_from_value(time_ps);
+        sc_core::sc_time delta = notify_time - sc_core::sc_time_stamp();
+        timer_events[eventid]->notify(delta);
+    });
 }
 
 void core::cancel(ocx::u64 eventid) {
-    timer_events[eventid]->cancel();
+    iguard_leave g(m_guard);
+
+    vcml::sc_sync([&]() { timer_events[eventid]->cancel(); });
 }
 
 void core::hint(ocx::hint_kind kind) {
     switch (kind) {
     case ocx::HINT_WFI: {
-        sync();
-        sc_core::sc_event_or_list list;
-        for (auto it : irq) {
-            list |= it.second->default_event();
-            // Treat WFI as NOP if IRQ is pending
-            if (it.second->read()) {
-                return;
-            }
+        bool nop = false;
+        {
+            iguard_leave g(m_guard);
+            vcml::sc_sync([&]() {
+                sync();
+                sc_core::sc_event_or_list list;
+                for (auto it : irq) {
+                    list |= it.second->default_event();
+                    // Treat WFI as NOP if IRQ is pending
+                    if (it.second->read()) {
+                        nop = true;
+                        return;
+                    }
+                }
+                const sc_core::sc_time before_wait = sc_core::sc_time_stamp();
+                sc_core::wait(list);
+                VCML_ERROR_ON(local_time() != sc_core::SC_ZERO_TIME,
+                              "core not synchronized");
+                const vcml::u64 cycles = (sc_core::sc_time_stamp() -
+                                          before_wait) /
+                                         clock_cycle();
+                m_sleep_cycles += cycles;
+                m_total_cycles += cycles;
+            });
         }
-        const sc_core::sc_time before_wait = sc_core::sc_time_stamp();
-        sc_core::wait(list);
-        VCML_ERROR_ON(local_time() != sc_core::SC_ZERO_TIME,
-                      "core not synchronized");
-        const vcml::u64 cycles = (sc_core::sc_time_stamp() - before_wait) /
-                                 clock_cycle();
-        m_sleep_cycles += cycles;
-        m_total_cycles += cycles;
-        m_core->stop();
+        if (!nop) {
+            m_core->stop();
+        }
         break;
     }
     default:
@@ -248,12 +294,14 @@ void core::handle_begin_basic_block(ocx::u64 vaddr) {
 }
 
 bool core::handle_breakpoint(ocx::u64 vaddr) {
+    iguard_leave g(m_guard);
     notify_breakpoint_hit(vaddr);
     return true;
 }
 
 bool core::handle_watchpoint(ocx::u64 vaddr, ocx::u64 size, ocx::u64 data,
                              bool iswr) {
+    iguard_leave g(m_guard);
     const vcml::range range(vaddr, vaddr + size);
 
     if (iswr)
@@ -267,24 +315,60 @@ void core::add_syscall_subscriber(const std::shared_ptr<core>& cpu) {
     m_syscall_subscriber.push_back(cpu);
 }
 
+void core::update_mem(vcml::u64 page_addr) {
+    if (m_guard.try_enter()) {
+        m_core->tb_flush_page(page_addr, page_addr + get_page_size() - 1);
+        m_core->invalidate_page_ptr(page_addr);
+        m_guard.leave();
+    } else {
+        std::lock_guard lk(m_update_request_mtx);
+
+        m_update_mem.insert(page_addr);
+    }
+}
+
 void core::memory_protector_update(vcml::u64 page_addr) {
-    m_core->tb_flush_page(page_addr, page_addr + 4095);
-    m_core->invalidate_page_ptr(page_addr);
-    for (auto const& cpu : m_syscall_subscriber) {
-        cpu->m_core->tb_flush_page(page_addr, page_addr + 4095);
-        cpu->m_core->invalidate_page_ptr(page_addr);
+    update_mem(page_addr);
+
+    if (vcml::sim_running()) {
+        for (auto const& cpu : m_syscall_subscriber) {
+            cpu->update_mem(page_addr);
+        }
     }
 }
 
 void core::timer_irq_trigger(int timer_id) {
+    iguard_enter g(m_guard);
     m_core->notified(timer_id);
 }
 
 void core::interrupt(size_t irq, bool set) {
+    iguard_enter g(m_guard);
     m_core->interrupt(irq, set);
 }
 
+void core::update_requests() {
+    iguard_enter g(m_guard);
+    std::lock_guard lk(m_update_request_mtx);
+
+    // remove invalid tbs
+    for (vcml::u64 page_addr : m_update_mem) {
+        m_core->tb_flush_page(page_addr, page_addr + get_page_size() - 1);
+        m_core->invalidate_page_ptr(page_addr);
+    }
+    m_update_mem.clear();
+
+    // hadle "syscals" -> mainly update/flush tlb
+    for (const std::pair<int, std::shared_ptr<void>>& sc : m_syscalls) {
+        m_core->handle_syscall(sc.first, sc.second);
+    }
+    m_syscalls.clear();
+}
+
 void core::simulate(size_t cycles) {
+    iguard_enter g(m_guard);
+
+    update_requests();
     // insn_count() is only reset at the beginning of step(), but not at
     // the end, so the number of cycles can only be summed up in the
     // following quantum
@@ -293,19 +377,23 @@ void core::simulate(size_t cycles) {
 }
 
 bool core::read_reg_dbg(size_t regno, void* buf, size_t len) {
+    iguard_enter g(m_guard);
     return m_core->read_reg(regno, buf);
 }
 
 bool core::write_reg_dbg(size_t regno, const void* buf, size_t len) {
+    iguard_enter g(m_guard);
     return m_core->write_reg(regno, buf);
 }
 
 bool core::page_size(vcml::u64& size) {
+    iguard_enter g(m_guard);
     size = m_core->page_size();
     return true;
 }
 
 bool core::virt_to_phys(vcml::u64 vaddr, vcml::u64& paddr) {
+    iguard_enter g(m_guard);
     ocx::u64 paddr_ocx = paddr;
     bool ret_val = m_core->virt_to_phys(vaddr, paddr_ocx);
     paddr = paddr_ocx;
@@ -313,14 +401,17 @@ bool core::virt_to_phys(vcml::u64 vaddr, vcml::u64& paddr) {
 }
 
 bool core::insert_breakpoint(vcml::u64 addr) {
+    iguard_enter g(m_guard);
     return m_core->add_breakpoint(addr);
 }
 
 bool core::remove_breakpoint(vcml::u64 addr) {
+    iguard_enter g(m_guard);
     return m_core->remove_breakpoint(addr);
 }
 
 bool core::insert_watchpoint(const vcml::range& mem, vcml::vcml_access acs) {
+    iguard_enter g(m_guard);
     switch (acs) {
     case vcml::vcml_access::VCML_ACCESS_READ:
         return m_core->add_watchpoint(mem.start, mem.length(), false);
@@ -336,6 +427,7 @@ bool core::insert_watchpoint(const vcml::range& mem, vcml::vcml_access acs) {
 }
 
 bool core::remove_watchpoint(const vcml::range& mem, vcml::vcml_access acs) {
+    iguard_enter g(m_guard);
     switch (acs) {
     case vcml::vcml_access::VCML_ACCESS_READ:
         return m_core->remove_watchpoint(mem.start, mem.length(), false);
@@ -368,7 +460,10 @@ bool core::disassemble(vcml::u8* ibuf, vcml::u64& addr, std::string& code) {
     size_t bufsz = 100;
     char buf[bufsz];
     vcml::u64 len;
-    len = m_core->disassemble(addr, buf, bufsz);
+    {
+        iguard_enter g(m_guard);
+        len = m_core->disassemble(addr, buf, bufsz);
+    }
 
     if (len == 0) {
         return false;
@@ -380,6 +475,8 @@ bool core::disassemble(vcml::u8* ibuf, vcml::u64& addr, std::string& code) {
 }
 
 vcml::u64 core::program_counter() {
+    iguard_enter g(m_guard);
+
     ocx::u64 pc_regid = m_core->pc_regid();
     vcml::u64 pc = 0;
     if (m_core->read_reg(pc_regid, &pc)) {
@@ -390,6 +487,8 @@ vcml::u64 core::program_counter() {
 }
 
 vcml::u64 core::stack_pointer() {
+    iguard_enter g(m_guard);
+
     ocx::u64 sp_regid = m_core->sp_regid();
     vcml::u64 sp = 0;
     if (m_core->read_reg(sp_regid, &sp)) {
@@ -404,10 +503,20 @@ vcml::u64 core::core_id() {
 }
 
 void core::handle_syscall(int callno, std::shared_ptr<void> arg) {
-    m_core->handle_syscall(callno, std::move(arg));
+    if (m_guard.try_enter()) {
+        m_core->handle_syscall(callno, std::move(arg));
+        m_guard.leave();
+        return;
+    }
+    {
+        std::lock_guard lk(m_update_request_mtx);
+        m_syscalls.push_back({ callno, std::move(arg) });
+    }
 }
 
 vcml::u64 core::get_page_size() {
+    iguard_enter g(m_guard);
+
     return m_core->page_size();
 }
 
@@ -437,8 +546,10 @@ core::core(const sc_core::sc_module_name& nm, vcml::u64 procid,
     m_sleep_cycles(0),
     m_total_cycles(0),
     m_syscall_subscriber(),
+    m_guard(),
     m_update_mem(),
     m_syscalls(),
+    m_update_request_mtx(),
     timer_irq_out("TIMER_IRQ_OUT"),
     timer_events(4) {
     symbols.inherit_default();

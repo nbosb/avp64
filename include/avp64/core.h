@@ -1,6 +1,6 @@
 /******************************************************************************
  *                                                                            *
- * Copyright 2024 Lukas Jünger, Nils Bosbach                                  *
+ * Copyright 2024 MachineWare GmbH                                            *
  *                                                                            *
  * This software is licensed under the MIT license found in the               *
  * LICENSE file at the root directory of this source tree.                    *
@@ -12,6 +12,7 @@
 
 #include "vcml.h"
 #include "ocx/ocx.h"
+#include "avp64/isolation_guard.h"
 
 #include <signal.h>
 
@@ -29,6 +30,7 @@ private:
         bool locked;
     };
     std::map<vcml::u64, struct page_data> m_protected_pages;
+    std::mutex m_mtx;
     struct sigaction m_sa_orig;
 
     memory_protector();
@@ -76,11 +78,15 @@ private:
     void* m_ocx_handle;
     create_instance_t m_create_instance_func;
     std::vector<std::shared_ptr<core>> m_syscall_subscriber;
+    isolation_guard m_guard;
     std::unordered_set<vcml::u64> m_update_mem;
     std::list<std::pair<int, std::shared_ptr<void>>> m_syscalls;
+    std::mutex m_update_request_mtx;
 
     void timer_irq_trigger(int timer_id);
     static void segfault_handler(int sig, siginfo_t* si, void* unused);
+
+    void update_requests();
 
 protected:
     virtual void interrupt(size_t irq, bool set) override;
@@ -113,6 +119,8 @@ public:
 
     virtual void protect_page(ocx::u8* page_ptr, ocx::u64 page_addr) override;
     void memory_protector_update(vcml::u64 page_addr);
+
+    void update_mem(vcml::u64 page_addr);
 
     virtual ocx::response transport(const ocx::transaction& tx) override;
     virtual void signal(ocx::u64 sigid, bool set) override;
