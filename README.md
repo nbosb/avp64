@@ -1,6 +1,7 @@
 # An ARMv8 Virtual Platform (AVP64)
 
 [![cmake](https://github.com/aut0/avp64/actions/workflows/cmake.yml/badge.svg?event=push)](https://github.com/aut0/avp64/actions/workflows/cmake.yml)
+[![windows](https://github.com/aut0/avp64/actions/workflows/windows.yml/badge.svg?event=push)](https://github.com/aut0/avp64/actions/workflows/windows.yml)
 [![nightly](https://github.com/aut0/avp64/actions/workflows/nightly.yml/badge.svg?event=schedule)](https://github.com/aut0/avp64/actions/workflows/nightly.yml)
 [![lint](https://github.com/aut0/avp64/actions/workflows/lint.yml/badge.svg?event=push)](https://github.com/aut0/avp64/actions/workflows/lint.yml)
 [![style](https://github.com/aut0/avp64/actions/workflows/style.yml/badge.svg?event=push)](https://github.com/aut0/avp64/actions/workflows/style.yml)

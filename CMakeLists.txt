@@ -20,6 +20,7 @@ find_github_repo(vcml "machineware-gmbh/vcml")
 
 set(OCX_QEMU_ARM_BUILD_TESTS OFF CACHE BOOL "disable ocx tests")
 find_github_repo(ocx-qemu-arm "nbosb/ocx-qemu-arm" "fix-namespace")
+set_target_properties(ocx-qemu-arm PROPERTIES CXX_STANDARD 17)
 
 set(src "${CMAKE_CURRENT_SOURCE_DIR}/src")
 set(inc "${CMAKE_CURRENT_SOURCE_DIR}/include")

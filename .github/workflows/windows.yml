@@ -1,0 +1,30 @@
+name: windows
+
+on:
+  push:
+    branches: [ master, dev** ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  windows:
+    name: windows
+    runs-on: ${{matrix.os}}
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-2019, windows-2022]
+        BUILD_TYPE: [Release]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Configure
+        run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{matrix.BUILD_TYPE}} -DAVP64_BUILD_TESTS=ON -DAVP64_BUILD_RUNNER=ON
+
+      - name: Build
+        run: cmake --build ${{github.workspace}}/build --config ${{matrix.BUILD_TYPE}} -j $(nproc)
