@@ -103,8 +103,8 @@ void mem_protector::register_page(core* core, vcml::u64 page_addr,
 
         if (it->second.locked) {
             if (it->second.page_addr != page_addr) {
-                vcml::log_error("page_addr do not match! %llu vs. %llu",
-                                it->second.page_addr, page_addr);
+                log_error("page_addr do not match! %llu vs. %llu",
+                          it->second.page_addr, page_addr);
             }
             return;
         }

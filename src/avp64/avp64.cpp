@@ -357,13 +357,13 @@ int system::run() {
     vcml::u64 ninsn = m_cpu.cycle_count();
 
     double mips = realtime == 0.0 ? 0.0 : ninsn / realtime / 1e6;
-    vcml::log_info("total");
-    vcml::log_info("  duration       : %.9fs", duration);
-    vcml::log_info("  runtime        : %.4fs", realtime);
-    vcml::log_info("  instructions   : %llu", ninsn);
-    vcml::log_info("  sim speed      : %.1f MIPS", mips);
-    vcml::log_info("  realtime ratio : %.2f / 1s",
-                   realtime == 0.0 ? 0.0 : realtime / duration);
+    log_info("total");
+    log_info("  duration       : %.9fs", duration);
+    log_info("  runtime        : %.4fs", realtime);
+    log_info("  instructions   : %llu", ninsn);
+    log_info("  sim speed      : %.1f MIPS", mips);
+    log_info("  realtime ratio : %.2f / 1s",
+             realtime == 0.0 ? 0.0 : realtime / duration);
 
     return result;
 }
