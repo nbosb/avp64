@@ -6,7 +6,7 @@
 [![style](https://github.com/aut0/avp64/actions/workflows/style.yml/badge.svg?event=push)](https://github.com/aut0/avp64/actions/workflows/style.yml)
 
 This repository contains an ARMv8 multicore virtual platform.
-It was built at the [Institute for Communication Technologies and Embedded Systems at RTWH Aachen University](https://www.ice.rwth-aachen.de/).
+It was built at the [Institute for Communication Technologies and Embedded Systems at RWTH Aachen University](https://www.ice.rwth-aachen.de/).
 The following target software configurations were tested (see [avp64-sw](https://github.com/aut0/avp64_sw)):
 
 - CoreMark
@@ -44,9 +44,9 @@ The needed steps are explained below:
 1. Chose directories for building and deployment:
 
     ```text
-    <source-dir>  location of your repo copy,     e.g. /home/lukas/avp64
-    <build-dir>   location to store object files, e.g. /home/lukas/avp64/BUILD
-    <install-dir> output directory for binaries,  e.g. /opt/avp64
+    <source-dir>  location of your repo copy,     e.g., /home/lukas/avp64
+    <build-dir>   location to store object files, e.g., /home/lukas/avp64/BUILD
+    <install-dir> output directory for binaries,  e.g., /opt/avp64
     ```
 
 1. Configure and build the project using `cmake`. During configuration you must
